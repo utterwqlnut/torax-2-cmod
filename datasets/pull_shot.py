@@ -79,7 +79,7 @@ class ShotPuller:
         return shot_data
 
 
-    def pull_shot_ts_extra(self,shot_number, n_e):
+    def pull_shot_ts_extra(self, shot_number, n_e):
         params = self.retrieval_manager.shot_setup(shot_number, self.retrieval_settings)
 
         # Check if shot is blacklisted
@@ -211,7 +211,7 @@ class ShotPuller:
             xr_full['n_e'] = xr_full['n_e'].where(xr_full['n_e']>=1e10).interpolate_na(dim='index', method='linear', fill_value="extrapolate")  
 
             # Pull TS profiles
-            ne_profile, te_profile = self.pull_shot_ts_extra(shot_number, self.retrieval_settings,np.asarray(xr_full['n_e']))
+            ne_profile, te_profile = self.pull_shot_ts_extra(shot_number, np.asarray(xr_full['n_e']))
 
             xr_full["ne_profile"] = (("time_idx","profile"),ne_profile)
             xr_full["te_profile"] = (("time_idx","profile"),te_profile)

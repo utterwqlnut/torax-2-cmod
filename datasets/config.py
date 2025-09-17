@@ -35,7 +35,8 @@ CONFIG = {
     },
     'geometry': { # very important need actual geometry
         'geometry_type': 'eqdsk',
-        'geometry_file': 'test.eqdsk',
+        'geometry_file': 'tmp.eqdsk',
+        'geometry_directory': './',
         'n_surfaces': 50,
     },
     'sources': {

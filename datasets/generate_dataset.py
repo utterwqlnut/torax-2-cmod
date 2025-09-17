@@ -7,6 +7,7 @@ import torax
 import xarray as xr
 import numpy as np
 from scipy.optimize import least_squares
+from helpers import get_peaking_factors
 
 from config import CONFIG
 from pull_shot import ShotPuller
@@ -18,25 +19,24 @@ shots = df['SHOT'].tolist()
 
 puller = ShotPuller()
 
-for shot in tqdm(shots):
+for shot in tqdm(shots[-100:]):
     try:
         shot_data = puller.pull_shot_full(shot)
         
         eq = CModEFITTree(shot)
-        eq.gfile(time=eq.getTimeBase()[0],name='torax/data/third_party/geo/test.eqdsk',shot=shot,nh=100,nw=100,nbbbs=100)
+        eq.gfile(time=eq.getTimeBase()[0],name='tmp.eqdsk',shot=shot,nh=100,nw=100,nbbbs=100)
 
-        eqdsk_read = EQDSKInterface.from_file('torax/data/third_party/geo/test.eqdsk', no_cocos=True)
+        eqdsk_read = EQDSKInterface.from_file('tmp.eqdsk', no_cocos=True)
         eqdsk_read.identify(as_cocos=8)
         eqdsk_read = eqdsk_read.to_cocos(2)
 
-        eqdsk_read.write("torax/data/third_party/geo/test.eqdsk",file_format='eqdsk')
+        eqdsk_read.write("tmp.eqdsk",file_format='eqdsk')
 
         for column in shot_data.data_vars:
             if column[-7:] == 'profile' or column == 'commit_hash':
                 continue
-            print(column)
             shot_data[column] = shot_data[column].interpolate_na(dim="index",method='linear').bfill(dim="index")
-        print('Here')
+
         # Get rhos array
         rhos = np.linspace(0,1,len(shot_data['ne_profile'][0]))
 
@@ -109,8 +109,8 @@ for shot in tqdm(shots):
             xarray_data = np.interp(shot_data['time'],data_tree.scalars.time,data_tree.scalars[column].to_numpy())
             simulated_data["sim "+column_conversion[column]] = xarray_data
         
-        # TODO get profiles too
         df = pd.concat((shot_data.drop_vars(["te_profile","ne_profile"]).to_dataframe(),pd.DataFrame(simulated_data)),axis=1)
+        df['sim ne_peaking'], df['sim te_peaking'] = get_peaking_factors(data_tree.profiles.n_e.interp(time=shot_data['time']),data_tree.profiles.T_e.interp(time=shot_data['time']))
         all_data.append(df)
 
     except Exception as e:
